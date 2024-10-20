@@ -1,6 +1,7 @@
 import asyncio
 import os
 import shutil
+import time
 import wave
 import torch
 import numpy as np
@@ -89,6 +90,8 @@ async def process_speech(text_ai: TextAI, tts_ai: TTSAI, voice_ai: VoiceAI, logg
 
     logger.info("Playing response...")
     try:
+        # Add sleep to save the file
+        time.sleep(0.3)
         playsound(out_file)  # Play the response audio
         logger.info("Played sound")
     except Exception as e:
