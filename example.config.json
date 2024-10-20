@@ -1,0 +1,8 @@
+{
+    "ollamaModel": "llama3.2",
+    "ollamaUrl": "http://localhost:11434",
+    "whisperModel": "small",
+    "maxStoredMessages": 10,
+    "keepAudioFiles": false,
+    "gracePeriodFrames": 100
+}
