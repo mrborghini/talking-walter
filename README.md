@@ -2,7 +2,7 @@
 
 ## What does this bot do?
 
-You can talk to Walter by just speaking to him and he will respond with speech. This project uses [Ollama](https://ollama.com/) for speech generation. [Whisper](https://openai.com/index/whisper/) for transcription and [TTS](https://github.com/coqui-ai/TTS) for talking.
+You can talk to Walter by just speaking to him and he will respond with speech. This project uses [Ollama](https://ollama.com/) for speech generation. [Whisper](https://openai.com/index/whisper/) for transcription and [TTS](https://github.com/coqui-ai/TTS) for talking. **Warning this project is experimental and should not be used for production. `I made this as a weekend project`**
 
 ## How to setup?
 First make sure you have the following things installed:
@@ -81,6 +81,24 @@ Then run
 python3 main.py
 ```
 
-### Commands
+## Commands
 
 If you say `WIPE WALTER MEMORY` or `TRUNCATE WALTER` it will get rid of his memory
+
+## Configuration
+
+All the configuration you can easily change in inside of `config.json`
+
+* `ollamaModel` - The model you want to use for generation. [Here you can find all the models](https://ollama.com/library). You can download a llama3.2 with ```ollama pull llama3.2```.
+
+* `ollamaUrl` - The base url of Ollama. If you are running this locally, you don't have to change anything.
+
+* `whisperModel` - The model of voice detection. You can change it by changing the name. [Here is a reference to the available models](https://github.com/openai/whisper?tab=readme-ov-file#available-models-and-languages).
+
+* `maxStoredMessages` - The max amount of messages stored in `conversation.json`. To remove the limit set the value to 0.
+
+* `keepAudioFiles` - It will delete the wav files in `recordings/` if set to `false`. If you want to keep the files set it to `true`.
+
+* `gracePeriodFrames` - This is the delay before it stops recording when it's silent. The higher the grace period the longer it takes to process the audio.
+
+* `respondsTo` - This is all the words or sentences the AI will respond to.
