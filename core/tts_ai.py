@@ -21,6 +21,9 @@ class TTSAI:
             filename = self.__sanitize_filename(text[:150], 6)
             output_file = os.path.join(directory, f"{filename}.wav")
 
+            if os.path.exists(output_file):
+                os.remove(output_file)
+
             if not os.path.exists(directory):
                 os.mkdir(directory)
 
