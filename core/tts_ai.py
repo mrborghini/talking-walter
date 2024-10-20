@@ -3,7 +3,7 @@ from TTS.api import TTS
 
 
 class TTSAI:
-    def __init__(self, torch_device: str, lang = "en", voice_file = "walter.wav", tts_model = "tts_models/multilingual/multi-dataset/xtts_v2") -> None:
+    def __init__(self, torch_device: str, lang = "en", voice_file = "voice_samples/walter.wav", tts_model = "tts_models/multilingual/multi-dataset/xtts_v2") -> None:
         self.lang = lang
         self.voice_file = voice_file
         self.tts = TTS(tts_model).to(torch_device)

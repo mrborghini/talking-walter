@@ -14,6 +14,7 @@ class Configuration:
     whisper_model: str
     keep_audio_files: bool
     grace_period_frames: int
+    responds_to: list[str]
 
 
 class ConfigReader:
@@ -39,6 +40,7 @@ class ConfigReader:
                 whisper_model=output_json["whisperModel"],
                 keep_audio_files=output_json["keepAudioFiles"],
                 grace_period_frames=output_json["gracePeriodFrames"],
+                responds_to=output_json["respondsTo"],
             )
             
             return config

@@ -2,7 +2,7 @@
 
 ## What does this bot do?
 
-You can talk to Walter by just speaking to him and he will respond with speech
+You can talk to Walter by just speaking to him and he will respond with speech. This project uses [Ollama](https://ollama.com/) for speech generation. [Whisper](https://openai.com/index/whisper/) for transcription and [TTS](https://github.com/coqui-ai/TTS) for talking.
 
 ## How to setup?
 First make sure you have the following things installed:
@@ -80,3 +80,7 @@ Then run
 ```bash
 python3 main.py
 ```
+
+### Commands
+
+If you say `WIPE WALTER MEMORY` or `TRUNCATE WALTER` it will get rid of his memory

@@ -4,5 +4,9 @@
     "whisperModel": "small",
     "maxStoredMessages": 10,
     "keepAudioFiles": false,
-    "gracePeriodFrames": 100
+    "gracePeriodFrames": 100,
+    "respondsTo": [
+        "walter",
+        "hello"
+    ]
 }
