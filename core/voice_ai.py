@@ -1,4 +1,5 @@
 import whisper
+
 class VoiceAI:
     def __init__(self, model: str) -> None:
         self.model = whisper.load_model(model)

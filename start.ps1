@@ -9,6 +9,7 @@ if (-Not (Test-Path $directory)) {
     Write-Host "Installing dependencies..."
     $env:PATH = "$PWD\$directory\Scripts;$env:PATH"
     & "$PWD\$directory\Scripts\pip.exe" install -r requirements.txt --no-cache-dir
+    & "$PWD\$directory\Scripts\pip.exe" install -r requirements.txt --no-cache-dir
 }
 
 if (-Not (Test-Path $configFile)) {
