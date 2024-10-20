@@ -6,7 +6,8 @@
     "keepAudioFiles": false,
     "gracePeriodFrames": 40,
     "respondsTo": [
-        "walter",
-        "hello"
+        "Walter",
+        "White",
+        "Heisenberg"
     ]
 }
