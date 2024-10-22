@@ -18,7 +18,7 @@ class TTSAI:
         try:
             directory = "recordings"
 
-            filename = self.__sanitize_filename(text[:150], 6)
+            filename = self.__sanitize_filename(text[:150], 50)
             output_file = os.path.join(directory, f"{filename}.wav")
 
             if os.path.exists(output_file):
