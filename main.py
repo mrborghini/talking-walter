@@ -7,7 +7,7 @@ import torch
 import numpy as np
 import pyaudio
 import webrtcvad
-from playsound import playsound
+import simpleaudio as sa
 
 # Import your AI modules
 from core.config_reader import ConfigReader
@@ -28,6 +28,14 @@ vad.set_mode(3)  # 0-3 (0: most aggressive, 3: least)
 
 # Initialize PyAudio
 p = pyaudio.PyAudio()
+
+def play_sound(filename: str):
+    # Load and play the sound
+    wave_obj = sa.WaveObject.from_wave_file(filename)
+    play_obj = wave_obj.play()
+
+    # Wait for the playback to finish
+    play_obj.wait_done()
 
 def get_device():
     """Check if a GPU is available and return the appropriate device."""
@@ -67,7 +75,7 @@ async def process_speech(text_ai: TextAI, tts_ai: TTSAI, voice_ai: VoiceAI, logg
     
     if "WIPE WALTER MEMORY" in command or "TRUNCATE WALTER" in command:
         logger.info(f"Deleted {text_ai.clear_conversation()} messages")
-        playsound("voice_samples/cnvdl.wav")
+        play_sound("voice_samples/cnvdl.wav")
         return
     
     if not should_respond(transcription, responds_to):
@@ -92,7 +100,7 @@ async def process_speech(text_ai: TextAI, tts_ai: TTSAI, voice_ai: VoiceAI, logg
     try:
         # Add sleep to save the file
         time.sleep(0.3)
-        playsound(out_file)  # Play the response audio
+        play_sound(out_file)  # Play the response audio
         logger.info("Played sound")
     except Exception as e:
         logger.error(f"Something went wrong: {str(e)}", Severity.MEDIUM)
