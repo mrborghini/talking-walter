@@ -6,10 +6,9 @@ import wave
 import torch
 import numpy as np
 import pyaudio
-import webrtcvad
-import simpleaudio as sa
+import pygame
 
-# Import your AI modules
+# Import the AI modules
 from core.config_reader import ConfigReader
 from core.logger import Logger, Severity
 from core.text_ai import TextAI
@@ -22,20 +21,17 @@ CHANNELS = 1  # Mono audio
 CHUNK_SIZE = 2048 # Number of audio samples per frame
 FORMAT = pyaudio.paInt16  # 16-bit PCM format
 
-# Initialize WebRTC VAD
-vad = webrtcvad.Vad()
-vad.set_mode(3)  # 0-3 (0: most aggressive, 3: least)
+# Initialize sound player
+pygame.mixer.init()
 
 # Initialize PyAudio
 p = pyaudio.PyAudio()
 
 def play_sound(filename: str):
-    # Load and play the sound
-    wave_obj = sa.WaveObject.from_wave_file(filename)
-    play_obj = wave_obj.play()
-
-    # Wait for the playback to finish
-    play_obj.wait_done()
+    """Load and play the sound."""
+    sound = pygame.mixer.Sound(filename)
+    sound.play()  
+    pygame.time.wait(int(sound.get_length() * 1000))
 
 def get_device():
     """Check if a GPU is available and return the appropriate device."""
@@ -124,11 +120,26 @@ def save_audio_to_file(audio_data, logger: Logger, file_path="recordings/user_re
 def normalize_audio(audio_data):
     return (audio_data * 32768).astype(np.int16)  # Convert float32 back to int16
 
-def is_speech(chunk, energy_threshold=300):
+def is_speech(chunk, energy_threshold_factor=1.5, noise_floor=200):
+    """Determine if a chunk contains speech based on energy threshold.
+    
+    This version calculates a dynamic energy threshold to better ignore noise.
+    
+    Args:
+        chunk (bytes): Audio chunk to analyze.
+        energy_threshold_factor (float): Factor to multiply the noise floor by to determine the threshold.
+        noise_floor (float): A baseline level of noise to consider.
+    
+    Returns:
+        bool: True if speech is detected, False otherwise.
+    """
     audio_data = np.frombuffer(chunk, dtype=np.int16)
     energy = np.abs(audio_data).mean()  # Calculate average energy level
-
-    return energy > energy_threshold  # Return True only if energy exceeds threshold
+    
+    # Dynamic threshold based on noise floor
+    dynamic_threshold = max(noise_floor, energy_threshold_factor * noise_floor)
+    
+    return energy > dynamic_threshold  # Return True if energy exceeds the dynamic threshold
 
 
 async def main():
@@ -174,14 +185,18 @@ async def main():
         while True:
             chunk = stream.read(CHUNK_SIZE, exception_on_overflow=False)
 
+            if recording:
+                # Add the chunk to the audio buffer
+                audio_buffer.append(np.frombuffer(chunk, dtype=np.int16))
+
             if is_speech(chunk):
                 silence_frames = 0  # Reset silence counter on speech
                 if not recording:
                     logger.info("Speech detected. Recording...")
                     recording = True
-
-                # Add chunk to the audio buffer
-                audio_buffer.append(np.frombuffer(chunk, dtype=np.int16))
+                    # Add the first chunk to the audio buffer
+                    audio_buffer.append(np.frombuffer(chunk, dtype=np.int16))
+                
 
             elif recording:
                 # Increment silence frames since no speech is detected

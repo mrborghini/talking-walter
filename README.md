@@ -7,7 +7,7 @@ You can talk to Walter by just speaking to him and he will respond with speech. 
 ## How to setup?
 First make sure you have the following things installed:
 
-- [Python 3.9 (other versions untested, but might work)](https://www.python.org/)
+- [Python 3.12 (other versions untested, but might work)](https://www.python.org/)
 - [Ollama](https://ollama.com/)
 
 ### Automatic setup

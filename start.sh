@@ -7,7 +7,7 @@ EXAMPLE_CONFIG_FILE="example.config.json"
 if [ ! -d "$DIRECTORY" ]; then
   echo "$DIRECTORY does not exist."
   echo "Creating $DIRECTORY."
-  python3.9 -m venv $DIRECTORY
+  python3 -m venv $DIRECTORY
   echo "Installing dependencies..."
   export PATH="$DIRECTORY/bin:$PATH"
   pip3 install wheel --no-cache-dir
