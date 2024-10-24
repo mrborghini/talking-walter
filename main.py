@@ -81,7 +81,7 @@ async def process_speech(text_ai: TextAI, tts_ai: TTSAI, voice_ai: VoiceAI, logg
     logger.debug(responds_to)
 
     logger.info("Generating response...")
-    response = await text_ai.get_ollama_message(transcription, "User")  # Get response asynchronously
+    response = await text_ai.get_ollama_message(transcription, "user")  # Get response asynchronously
     logger.info(f"AI Response: {response}")
 
     torch.cuda.empty_cache()
