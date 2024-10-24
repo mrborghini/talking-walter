@@ -115,8 +115,6 @@ class TextAI:
                 "stream": False,
             }
 
-            print(content)
-
             try:
                 response = await client.post(f"{self.__base_url}/api/chat", json=content, timeout=None)
                 
