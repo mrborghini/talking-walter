@@ -2,9 +2,10 @@
     "ollamaModel": "llama3.2",
     "ollamaUrl": "http://localhost:11434",
     "whisperModel": "small",
-    "maxStoredMessages": 6,
+    "maxStoredMessages": 20,
     "keepAudioFiles": false,
-    "gracePeriodFrames": 40,
+    "gracePeriodInMS": 500,
+    "alwaysUseDefaultMic": false,
     "respondsTo": [
         "Walter",
         "White",

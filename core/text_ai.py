@@ -55,7 +55,7 @@ class TextAI:
         self.__conversation_file = "conversation.json"
         self.__system_message_file = "system_message.txt"
         self.__conversation: Conversation
-        self.__logger = Logger("TextAiMessage")
+        self.__logger = Logger("TextAI")
         
     def get_system_message(self):
         try:

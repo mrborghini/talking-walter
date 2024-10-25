@@ -5,7 +5,7 @@ import time
 import wave
 import torch
 import numpy as np
-import pyaudio
+import sounddevice as sd
 import pygame
 
 # Import the AI modules
@@ -18,14 +18,10 @@ from core.voice_ai import VoiceAI
 # Audio stream settings
 RATE = 48000  # 48 kHz sampling rate (better audio fidelity)
 CHANNELS = 1  # Mono audio
-CHUNK_SIZE = 2048 # Number of audio samples per frame
-FORMAT = pyaudio.paInt16  # 16-bit PCM format
+CHUNK_SIZE = 2048  # Number of audio samples per frame
 
 # Initialize sound player
 pygame.mixer.init()
-
-# Initialize PyAudio
-p = pyaudio.PyAudio()
 
 def play_sound(filename: str):
     """Load and play the sound."""
@@ -33,7 +29,7 @@ def play_sound(filename: str):
     sound.play()  
     pygame.time.wait(int(sound.get_length() * 1000))
 
-def get_device():
+def get_torch_device():
     """Check if a GPU is available and return the appropriate device."""
     return "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -51,7 +47,6 @@ def generate_clean_string(input: str):
     chars_to_remove = "\\/:*?\"<>|()',[]-{}"
     sanitized = ''.join(c if c not in chars_to_remove else '' for c in input)
     return sanitized
-
 
 async def process_speech(text_ai: TextAI, tts_ai: TTSAI, voice_ai: VoiceAI, logger: Logger, keep_audio_files: bool, responds_to: list[str], recording_file="recordings/user_recording.wav"):
     """Process the recorded speech using your AI models."""
@@ -112,7 +107,7 @@ def save_audio_to_file(audio_data, logger: Logger, file_path="recordings/user_re
     audio_int16 = normalize_audio(audio_data)
     with wave.open(file_path, 'wb') as wf:
         wf.setnchannels(CHANNELS)
-        wf.setsampwidth(p.get_sample_size(FORMAT))
+        wf.setsampwidth(2)  # 2 bytes for int16 format
         wf.setframerate(RATE)
         wf.writeframes(audio_int16.tobytes())
     logger.info(f"Audio saved as {file_path}")
@@ -120,20 +115,19 @@ def save_audio_to_file(audio_data, logger: Logger, file_path="recordings/user_re
 def normalize_audio(audio_data):
     return (audio_data * 32768).astype(np.int16)  # Convert float32 back to int16
 
-def is_speech(chunk, energy_threshold_factor=1.5, noise_floor=200):
+def is_speech(audio_data, energy_threshold_factor=1.5, noise_floor=200):
     """Determine if a chunk contains speech based on energy threshold.
     
     This version calculates a dynamic energy threshold to better ignore noise.
     
     Args:
-        chunk (bytes): Audio chunk to analyze.
+        audio_data (numpy array): Audio chunk to analyze.
         energy_threshold_factor (float): Factor to multiply the noise floor by to determine the threshold.
         noise_floor (float): A baseline level of noise to consider.
     
     Returns:
         bool: True if speech is detected, False otherwise.
     """
-    audio_data = np.frombuffer(chunk, dtype=np.int16)
     energy = np.abs(audio_data).mean()  # Calculate average energy level
     
     # Dynamic threshold based on noise floor
@@ -141,6 +135,28 @@ def is_speech(chunk, energy_threshold_factor=1.5, noise_floor=200):
     
     return energy > dynamic_threshold  # Return True if energy exceeds the dynamic threshold
 
+def get_user_microphone() -> int:
+    devices = sd.query_devices()
+    # Find the first device with input channels (microphone)
+    mics = []
+    for device in devices:
+        if device['max_input_channels'] > 0:  # Has input channels, likely a microphone
+            mics.append({"name": device["name"], "index": device["index"]})
+    
+    if len(mics) == 0:
+        raise RuntimeError("No microphone found")
+    
+    if len(mics) == 1:
+        return mics[0]["index"]
+    
+    for i, mic in enumerate(mics):
+        print(f"{i}: {mic["name"]}")
+    
+    mic_index = int(input("Please type your microphone number: "))
+
+    return mics[mic_index]["index"]
+
+    
 
 async def main():
     # Get configuration
@@ -148,14 +164,19 @@ async def main():
     logger.debug("Debug mode is enabled")
 
     logger.info("Getting configuration")
-
     config_reader = ConfigReader("config.json")
     cfg = config_reader.read_config()
 
     logger.debug(cfg)
 
+    mic_index = None
+
+    if not cfg.always_use_default_mic:
+        logger.debug(f"cfg.always_use_default_mic: {cfg.always_use_default_mic}")
+        mic_index: int = get_user_microphone()
+
+    device = get_torch_device()
     # Initialize AI modules
-    device = get_device()
     logger.info(f"Using {device.upper()}")
 
     logger.info("Loading TTS AI...")
@@ -167,63 +188,50 @@ async def main():
     logger.info("Loading Text AI...")
     text_ai = TextAI(cfg)
 
-    # Open audio stream
-    stream = p.open(
-        format=FORMAT,
-        channels=CHANNELS,
-        rate=RATE,
-        input=True,
-        frames_per_buffer=CHUNK_SIZE
-    )
-
     logger.info("Listening for speech...")
     audio_buffer = []
     recording = False
 
     silence_frames = 0  # Counter for silent frames
+
     try:
-        while True:
-            chunk = stream.read(CHUNK_SIZE, exception_on_overflow=False)
+        with sd.InputStream(samplerate=RATE, channels=CHANNELS, dtype='int16', blocksize=CHUNK_SIZE, device=mic_index) as stream:
+            while True:
+                chunk, _ = stream.read(CHUNK_SIZE)
 
-            if recording:
-                # Add the chunk to the audio buffer
-                audio_buffer.append(np.frombuffer(chunk, dtype=np.int16))
+                if recording:
+                    # Add the chunk to the audio buffer
+                    audio_buffer.append(chunk)
 
-            if is_speech(chunk):
-                silence_frames = 0  # Reset silence counter on speech
-                if not recording:
-                    logger.info("Speech detected. Recording...")
-                    recording = True
-                    # Add the first chunk to the audio buffer
-                    audio_buffer.append(np.frombuffer(chunk, dtype=np.int16))
+                if is_speech(chunk):
+                    silence_frames = 0  # Reset silence counter on speech
+                    if not recording:
+                        logger.info("Speech detected. Recording...")
+                        recording = True
+                        # Add the first chunk to the audio buffer
+                        audio_buffer.append(chunk)
                 
+                elif recording:
+                    # Increment silence frames since no speech is detected
+                    silence_frames += 1
 
-            elif recording:
-                # Increment silence frames since no speech is detected
-                silence_frames += 1
+                    if silence_frames >= int(RATE * cfg.grace_period_in_seconds / CHUNK_SIZE):
+                        # Grace period passed, stop recording
+                        logger.info("Grace period over. Stopping recording...")
+                        recording = False
+                        silence_frames = 0
 
-                if silence_frames >= cfg.grace_period_frames: # Number of silent frames to wait before stopping (e.g., 0.5s if CHUNK_SIZE=320 at 16kHz)
-                    # Grace period passed, stop recording
-                    logger.info("Grace period over. Stopping recording...")
-                    recording = False
-                    silence_frames = 0
+                        # Process the recorded audio
+                        audio_data = np.concatenate(audio_buffer).astype(np.float32) / 32768.0
+                        audio_buffer = []  # Clear buffer
 
-                    # Process the recorded audio
-                    audio_data = np.concatenate(audio_buffer).astype(np.float32) / 32768.0
-                    audio_buffer = []  # Clear buffer
+                        recording_file = "recordings/user_recording.wav"
 
-                    recording_file = "recordings/user_recording.wav"
-
-                    save_audio_to_file(audio_data, logger, recording_file)
-                    await process_speech(text_ai, tts_ai, voice_ai, logger, cfg.keep_audio_files, cfg.responds_to, recording_file)
+                        save_audio_to_file(audio_data, logger, recording_file)
+                        await process_speech(text_ai, tts_ai, voice_ai, logger, cfg.keep_audio_files, cfg.responds_to, recording_file)
 
     except KeyboardInterrupt:
         logger.info("Stopping...")
-    finally:
-        # Close the stream gracefully
-        stream.stop_stream()
-        stream.close()
-        p.terminate()
 
 if __name__ == "__main__":
     asyncio.run(main())

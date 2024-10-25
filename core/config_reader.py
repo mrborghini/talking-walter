@@ -13,8 +13,9 @@ class Configuration:
     max_stored_messages: int
     whisper_model: str
     keep_audio_files: bool
-    grace_period_frames: int
+    grace_period_in_seconds: float
     responds_to: list[str]
+    always_use_default_mic: bool
 
 
 class ConfigReader:
@@ -39,8 +40,9 @@ class ConfigReader:
                 max_stored_messages=output_json["maxStoredMessages"],
                 whisper_model=output_json["whisperModel"],
                 keep_audio_files=output_json["keepAudioFiles"],
-                grace_period_frames=output_json["gracePeriodFrames"],
+                grace_period_in_seconds=output_json["gracePeriodInMS"] / 1000,
                 responds_to=output_json["respondsTo"],
+                always_use_default_mic=output_json["alwaysUseDefaultMic"]
             )
             
             return config
