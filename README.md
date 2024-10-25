@@ -42,7 +42,7 @@ Then you might get a 401 error. That's because you need to modify the `config.js
 For NVidia GPU support on Windows you might need to install Pytorch through the following command
 
 ```bash
-.venv\Scripts\Activate.ps1; pip uninstall torch torchvision torchaudio; pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 --no-cache
+.venv\Scripts\Activate.ps1; pip uninstall -y torch torchvision torchaudio; pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 --no-cache
 ```
 
 ### Manual setup
