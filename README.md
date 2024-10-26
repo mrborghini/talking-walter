@@ -89,9 +89,13 @@ If you say `WIPE WALTER MEMORY` or `TRUNCATE WALTER` it will get rid of his memo
 
 All the configuration you can easily change in inside of `config.json`
 
-* `ollamaModel` - The model you want to use for generation. [Here you can find all the models](https://ollama.com/library). You can download a llama3.2 with ```ollama pull llama3.2```.
+* `largeLanguageModel` - The model you want to use for generation. [Here you can find all the models](https://ollama.com/library). You can download a llama3.2 with ```ollama pull llama3.2``` or other models of any other provider.
 
 * `ollamaUrl` - The base url of Ollama. If you are running this locally, you don't have to change anything.
+
+* `openaiApiKey` - This is if you want to use OpenAI's LLM instead of Ollama. **Completely optional**
+
+* `cohereApiKey` - This is if you want to use CoHere's LLM instead of Ollama. **Completely optional**
 
 * `whisperModel` - The model of voice detection. You can change it by changing the name. [Here is a reference to the available models](https://github.com/openai/whisper?tab=readme-ov-file#available-models-and-languages).
 

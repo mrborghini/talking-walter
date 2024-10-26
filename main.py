@@ -10,8 +10,11 @@ import sounddevice as sd
 import pygame
 
 # Import the AI modules
-from core.config_reader import ConfigReader
+from core.chatgpt_handler import ChatGPTHandler
+from core.cohere_handler import CohereHandler
+from core.config_reader import ConfigReader, Configuration
 from core.logger import Logger, Severity
+from core.ollama_handler import OllamaHandler
 from core.text_ai import TextAI
 from core.tts_ai import TTSAI
 from core.voice_ai import VoiceAI
@@ -74,7 +77,7 @@ async def process_speech(text_ai: TextAI, tts_ai: TTSAI, voice_ai: VoiceAI, logg
     logger.debug(responds_to)
 
     logger.info("Generating response...")
-    response = await text_ai.get_ollama_message(transcription, "user")  # Get response asynchronously
+    response = await text_ai.get_llm_message(transcription)  # Get response asynchronously
     logger.info(f"AI Response: {response}")
 
     torch.cuda.empty_cache()
@@ -154,6 +157,44 @@ def get_user_microphone() -> int:
 
     return mics[mic_index]["index"]
 
+def get_providers(cfg: Configuration):
+    llm_providers: list[TextAI] = []
+    if cfg.cohere_api_key != "":
+        llm_providers.append(CohereHandler(cfg))
+    
+    if cfg.openai_api_key != "":
+        llm_providers.append(ChatGPTHandler(cfg))
+
+    if len(llm_providers) == 0 or len(llm_providers) >= 2:
+        llm_providers.append(OllamaHandler(cfg))
+
+    return llm_providers
+
+def choose_text_ai(cfg: Configuration) -> TextAI:
+    llm_providers: list[TextAI] = get_providers(cfg)
+
+    if len(llm_providers) == 1:
+        return llm_providers[0]
+
+    for i, llm_provider in enumerate(llm_providers):
+        print(f"{i}: {llm_provider.friendly_identifier()}")
+    
+    llm_provider_index = int(input("Please type which large language model provider you want to use number: "))
+
+    selected_text_ai = llm_providers[llm_provider_index]
+
+    yes_or_no = input(f"Your current model for {selected_text_ai.friendly_identifier()} is {cfg.large_language_model}. Is this correct? (y/n): ")
+
+    if yes_or_no == "y":
+        selected_text_ai
+    
+    new_model = input("Please type the model you want to use: ")
+
+    cfg.large_language_model = new_model
+
+    selected_text_ai = get_providers(cfg)[llm_provider_index]
+
+    return selected_text_ai
 
 close_app = False
 
@@ -194,14 +235,15 @@ async def main():
     # Initialize AI modules
     logger.info(f"Using {device.upper()}")
 
+    logger.info("Loading Text AI...")
+    text_ai = choose_text_ai(cfg)
+    logger.info(f"Selected {text_ai.friendly_identifier()} to be provider")
+
     logger.info("Loading TTS AI...")
     tts_ai = TTSAI(device, voice_file="voice_samples/walter.mp3")
 
     logger.info("Loading Voice AI...")
     voice_ai = VoiceAI(cfg.whisper_model)
-
-    logger.info("Loading Text AI...")
-    text_ai = TextAI(cfg)
 
     logger.info("Listening for speech...")
     audio_buffer = []

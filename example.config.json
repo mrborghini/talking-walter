@@ -1,6 +1,8 @@
 {
-    "ollamaModel": "llama3.2",
+    "largeLanguageModel": "llama3.2",
     "ollamaUrl": "http://localhost:11434",
+    "openaiApiKey": "",
+    "cohereApiKey": "",
     "whisperModel": "small",
     "maxStoredMessages": 20,
     "keepAudioFiles": false,

@@ -8,7 +8,7 @@ class Configuration:
     """
     Configuration from config.json
     """
-    ollama_model: str
+    large_language_model: str
     ollama_url: str
     max_stored_messages: int
     whisper_model: str
@@ -16,6 +16,8 @@ class Configuration:
     grace_period_in_seconds: float
     responds_to: list[str]
     always_use_default_mic: bool
+    openai_api_key: str
+    cohere_api_key: str
 
 
 class ConfigReader:
@@ -35,14 +37,16 @@ class ConfigReader:
             output_json = json.load(file_buffer)
             
             config = Configuration(
-                ollama_model=output_json["ollamaModel"], 
-                ollama_url=output_json["ollamaUrl"], 
+                large_language_model=output_json["largeLanguageModel"], 
+                ollama_url=output_json["ollamaUrl"],
                 max_stored_messages=output_json["maxStoredMessages"],
                 whisper_model=output_json["whisperModel"],
                 keep_audio_files=output_json["keepAudioFiles"],
                 grace_period_in_seconds=output_json["gracePeriodInMS"] / 1000,
                 responds_to=output_json["respondsTo"],
-                always_use_default_mic=output_json["alwaysUseDefaultMic"]
+                always_use_default_mic=output_json["alwaysUseDefaultMic"],
+                openai_api_key=output_json["openaiApiKey"],
+                cohere_api_key=output_json["cohereApiKey"],
             )
             
             return config
