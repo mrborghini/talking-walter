@@ -1,6 +1,7 @@
 import asyncio
 import os
 import shutil
+import signal
 import time
 import wave
 import torch
@@ -19,9 +20,6 @@ from core.voice_ai import VoiceAI
 RATE = 48000  # 48 kHz sampling rate (better audio fidelity)
 CHANNELS = 1  # Mono audio
 CHUNK_SIZE = 2048  # Number of audio samples per frame
-
-# Initialize sound player
-pygame.mixer.init()
 
 def play_sound(filename: str):
     """Load and play the sound."""
@@ -156,12 +154,24 @@ def get_user_microphone() -> int:
 
     return mics[mic_index]["index"]
 
-    
+
+close_app = False
+
+def handle_signal(e, o):
+    global close_app
+
+    logger = Logger("Signal-handler")
+
+    logger.info("Ctrl-C has been pressed. Stopping...")
+    logger.debug(f"{str(e)} {str(o)}")
+    close_app = True
 
 async def main():
     # Get configuration
     logger = Logger("main")
     logger.debug("Debug mode is enabled")
+
+    signal.signal(signal.SIGINT, handle_signal)
 
     logger.info("Getting configuration")
     config_reader = ConfigReader("config.json")
@@ -175,6 +185,11 @@ async def main():
         logger.debug(f"cfg.always_use_default_mic: {cfg.always_use_default_mic}")
         mic_index: int = get_user_microphone()
 
+    # Initialize sound player
+    logger.info("Initializing audio player")
+    pygame.mixer.init()
+
+    logger.info("Getting torch device.")
     device = get_torch_device()
     # Initialize AI modules
     logger.info(f"Using {device.upper()}")
@@ -193,45 +208,42 @@ async def main():
     recording = False
 
     silence_frames = 0  # Counter for silent frames
+    with sd.InputStream(samplerate=RATE, channels=CHANNELS, dtype='int16', blocksize=CHUNK_SIZE, device=mic_index) as stream:
+        while not close_app:
+            chunk, _ = stream.read(CHUNK_SIZE)
 
-    try:
-        with sd.InputStream(samplerate=RATE, channels=CHANNELS, dtype='int16', blocksize=CHUNK_SIZE, device=mic_index) as stream:
-            while True:
-                chunk, _ = stream.read(CHUNK_SIZE)
+            if recording:
+                # Add the chunk to the audio buffer
+                audio_buffer.append(chunk)
 
-                if recording:
-                    # Add the chunk to the audio buffer
+            if is_speech(chunk):
+                silence_frames = 0  # Reset silence counter on speech
+                if not recording:
+                    logger.info("Speech detected. Recording...")
+                    recording = True
+                    # Add the first chunk to the audio buffer
                     audio_buffer.append(chunk)
+            
+            elif recording:
+                # Increment silence frames since no speech is detected
+                silence_frames += 1
 
-                if is_speech(chunk):
-                    silence_frames = 0  # Reset silence counter on speech
-                    if not recording:
-                        logger.info("Speech detected. Recording...")
-                        recording = True
-                        # Add the first chunk to the audio buffer
-                        audio_buffer.append(chunk)
-                
-                elif recording:
-                    # Increment silence frames since no speech is detected
-                    silence_frames += 1
+                if silence_frames >= int(RATE * cfg.grace_period_in_seconds / CHUNK_SIZE):
+                    # Grace period passed, stop recording
+                    logger.info("Grace period over. Stopping recording...")
+                    recording = False
+                    silence_frames = 0
 
-                    if silence_frames >= int(RATE * cfg.grace_period_in_seconds / CHUNK_SIZE):
-                        # Grace period passed, stop recording
-                        logger.info("Grace period over. Stopping recording...")
-                        recording = False
-                        silence_frames = 0
+                    # Process the recorded audio
+                    audio_data = np.concatenate(audio_buffer).astype(np.float32) / 32768.0
+                    audio_buffer = []  # Clear buffer
 
-                        # Process the recorded audio
-                        audio_data = np.concatenate(audio_buffer).astype(np.float32) / 32768.0
-                        audio_buffer = []  # Clear buffer
+                    recording_file = "recordings/user_recording.wav"
 
-                        recording_file = "recordings/user_recording.wav"
-
-                        save_audio_to_file(audio_data, logger, recording_file)
-                        await process_speech(text_ai, tts_ai, voice_ai, logger, cfg.keep_audio_files, cfg.responds_to, recording_file)
-
-    except KeyboardInterrupt:
-        logger.info("Stopping...")
+                    save_audio_to_file(audio_data, logger, recording_file)
+                    await process_speech(text_ai, tts_ai, voice_ai, logger, cfg.keep_audio_files, cfg.responds_to, recording_file)
+    
+    logger.info("Goodbye!")
 
 if __name__ == "__main__":
     asyncio.run(main())
