@@ -6,7 +6,7 @@
     "whisperModel": "small",
     "maxStoredMessages": 20,
     "keepAudioFiles": false,
-    "gracePeriodInMS": 500,
+    "gracePeriodInMS": 2000,
     "alwaysUseDefaultMic": false,
     "respondsTo": [
         "Walter",
