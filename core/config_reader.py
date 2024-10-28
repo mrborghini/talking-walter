@@ -18,6 +18,7 @@ class Configuration:
     always_use_default_mic: bool
     openai_api_key: str
     cohere_api_key: str
+    speech_threshold: float
 
 
 class ConfigReader:
@@ -47,6 +48,7 @@ class ConfigReader:
                 always_use_default_mic=output_json["alwaysUseDefaultMic"],
                 openai_api_key=output_json["openaiApiKey"],
                 cohere_api_key=output_json["cohereApiKey"],
+                speech_threshold=output_json["speechThreshold"],
             )
             
             return config

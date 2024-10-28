@@ -116,25 +116,18 @@ def save_audio_to_file(audio_data, logger: Logger, file_path="recordings/user_re
 def normalize_audio(audio_data):
     return (audio_data * 32768).astype(np.int16)  # Convert float32 back to int16
 
-def is_speech(audio_data, energy_threshold_factor=1.5, noise_floor=200):
-    """Determine if a chunk contains speech based on energy threshold.
-    
-    This version calculates a dynamic energy threshold to better ignore noise.
-    
-    Args:
-        audio_data (numpy array): Audio chunk to analyze.
-        energy_threshold_factor (float): Factor to multiply the noise floor by to determine the threshold.
-        noise_floor (float): A baseline level of noise to consider.
-    
-    Returns:
-        bool: True if speech is detected, False otherwise.
-    """
-    energy = np.abs(audio_data).mean()  # Calculate average energy level
-    
-    # Dynamic threshold based on noise floor
-    dynamic_threshold = max(noise_floor, energy_threshold_factor * noise_floor)
-    
-    return energy > dynamic_threshold  # Return True if energy exceeds the dynamic threshold
+def is_speech(audio_data, threshold=0.02):
+    # Check for NaNs or Infs
+    if np.isnan(audio_data).any() or np.isinf(audio_data).any():
+        print("Warning: audio_data contains NaN or Inf values.")
+        return False  # Treat as silence for now
+
+    # Calculate RMS for the audio
+    rms_value = np.sqrt(np.mean(audio_data**2))
+
+    # Determine if speech is detected based on the RMS threshold
+    return rms_value > threshold
+
 
 def get_user_microphone() -> int:
     devices = sd.query_devices()
@@ -250,7 +243,7 @@ async def main():
     recording = False
 
     silence_frames = 0  # Counter for silent frames
-    with sd.InputStream(samplerate=RATE, channels=CHANNELS, dtype='int16', blocksize=CHUNK_SIZE, device=mic_index) as stream:
+    with sd.InputStream(samplerate=RATE, channels=CHANNELS, dtype='float32', blocksize=CHUNK_SIZE, device=mic_index) as stream:
         while not close_app:
             chunk, _ = stream.read(CHUNK_SIZE)
 
@@ -258,7 +251,7 @@ async def main():
                 # Add the chunk to the audio buffer
                 audio_buffer.append(chunk)
 
-            if is_speech(chunk):
+            if is_speech(chunk, cfg.speech_threshold):
                 silence_frames = 0  # Reset silence counter on speech
                 if not recording:
                     logger.info("Speech detected. Recording...")
@@ -277,7 +270,9 @@ async def main():
                     silence_frames = 0
 
                     # Process the recorded audio
-                    audio_data = np.concatenate(audio_buffer).astype(np.float32) / 32768.0
+                    audio_data = np.concatenate(audio_buffer).astype(np.float32)
+                    audio_data /= np.max(np.abs(audio_data))  # Normalize to range [-1.0, 1.0]
+
                     audio_buffer = []  # Clear buffer
 
                     recording_file = "recordings/user_recording.wav"

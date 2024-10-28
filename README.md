@@ -103,6 +103,8 @@ All the configuration you can easily change in inside of `config.json`
 
 * `keepAudioFiles` - It will delete the wav files in `recordings/` if set to `false`. If you want to keep the files set it to `true`.
 
+* `speechThreshold` - The sensitivity it will detect your voice. from a value of (0.1-0.9)
+
 * `gracePeriodInMS` - This is the delay before it stops recording when it's silent. The higher the grace period the longer it takes to process the audio. Unit: Milliseconds.
 
 * `respondsTo` - This is all the words or sentences the AI will respond to.
