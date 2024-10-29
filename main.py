@@ -277,8 +277,10 @@ async def main():
 
                     recording_file = "recordings/user_recording.wav"
 
+                    stream.stop()
                     save_audio_to_file(audio_data, logger, recording_file)
                     await process_speech(text_ai, tts_ai, voice_ai, logger, cfg.keep_audio_files, cfg.responds_to, recording_file)
+                    stream.start()
     
     logger.info("Goodbye!")
 
