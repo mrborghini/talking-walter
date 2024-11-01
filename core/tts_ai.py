@@ -9,10 +9,12 @@ class TTSAI:
         self.tts = TTS(tts_model).to(torch_device)
 
     def __sanitize_filename(self, filename: str, max_length: int = 150) -> str:
-        # Replace invalid characters with hyphens and truncate to max_length
-        invalid_chars = '\\/:*?"<>|()[]{} '
-        sanitized = ''.join(c if c not in invalid_chars else '-' for c in filename)
+        allowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+        # Filter to keep only allowed characters
+        sanitized = ''.join(c for c in filename if c in allowed_chars)
+        # Truncate to max_length
         return sanitized[:max_length]
+
 
     def generate_audio(self, text: str):
         try:
