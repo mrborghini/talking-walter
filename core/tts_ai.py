@@ -10,6 +10,10 @@ class TTSAI:
 
     def __sanitize_filename(self, filename: str, max_length: int = 150) -> str:
         allowed_chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-_"
+        
+        # Replace spaces with dashes
+        filename = filename.replace(' ', '-')
+
         # Filter to keep only allowed characters
         sanitized = ''.join(c for c in filename if c in allowed_chars)
         # Truncate to max_length
