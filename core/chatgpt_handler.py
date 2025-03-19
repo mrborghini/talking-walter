@@ -23,8 +23,8 @@ class ChatGPTHandler(TextAI):
             )
 
             response_message = chat_completion.choices[0].message
-            role: str = response_message["role"]
-            content: str = response_message["content"]
+            role: str = response_message.role
+            content: str = response_message.content
 
             self._conversation.add_message(content, role)
 
